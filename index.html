@@ -1645,8 +1645,18 @@ function computeAvailablePdfChartHeight(){
   const FUDGE = 0.85; // factor de corrección conservador sobre el espacio calculado
 
   const available = (usableHeightPx - canvasTop - wrapBottomPad - SAFETY_BUFFER) * FUDGE;
-  const MIN_H = 210, MAX_H = 420;
-  return Math.max(MIN_H, Math.min(MAX_H, available));
+  const MIN_H = 260; // alto mínimo aceptable/legible para la gráfica
+  const MAX_H = 420;
+  const FULL_PAGE_H = 330; // alto cómodo cuando la gráfica arranca sola en una hoja nueva
+
+  if(available < MIN_H){
+    // No cabe un tamaño legible en lo que resta de la página 1: en vez de forzar un tamaño
+    // que sabemos que no cabe (lo que antes causaba que la gráfica se cortara a la mitad entre
+    // hojas), forzamos nosotros mismos que la tarjeta completa empiece limpia en una página
+    // nueva, donde sí sobra espacio de sobra.
+    return { height: FULL_PAGE_H, forceNewPage: true };
+  }
+  return { height: Math.min(MAX_H, available), forceNewPage: false };
 }
 
 function resizeChartToContainer(){
@@ -1662,13 +1672,12 @@ function resizeChartToContainer(){
   let targetHeight;
   if(document.body.classList.contains('pdf-export-mode')){
     // Calculamos cuánto espacio le queda a la gráfica debajo de las tarjetas en la página 1.
-    // Esto SÍ debe ser dinámico (no un valor fijo): la gráfica solo está protegida contra
-    // cortes de página (break-inside:avoid) si cabe completa en una sola página, así que si le
-    // damos un alto fijo más grande que el espacio real disponible, se corta a la mitad en vez
-    // de saltar entera a la página 2. Ahora que el resto del layout ya es idéntico entre
-    // dispositivos (fuente cargada, text-size-adjust desactivado, windowWidth fijo), esta
-    // medición en vivo debería dar el mismo resultado sin importar el dispositivo.
-    targetHeight = computeAvailablePdfChartHeight() || parseFloat(getComputedStyle(canvas).maxHeight) || canvas.clientHeight || 210;
+    // Si no alcanza un tamaño legible, forzamos que la tarjeta completa arranque en una página
+    // nueva (break-before:page) en vez de dejar que se corte a la mitad entre hojas.
+    const calc = computeAvailablePdfChartHeight();
+    targetHeight = (calc && calc.height) || parseFloat(getComputedStyle(canvas).maxHeight) || canvas.clientHeight || 260;
+    wrap.style.breakBefore = (calc && calc.forceNewPage) ? 'page' : '';
+    wrap.style.pageBreakBefore = (calc && calc.forceNewPage) ? 'always' : '';
     // Fijamos un tope duro inline (mayor prioridad que cualquier regla externa no-!important).
     // Sin esto, el resize automático "responsive" de Chart.js (disparado por su propio
     // ResizeObserver sobre el contenedor, que a su vez cambia de tamaño según el canvas) puede
@@ -1676,6 +1685,8 @@ function resizeChartToContainer(){
     // calculado — que es justo lo que causaba el desbordamiento a la página 2.
     canvas.style.maxHeight = targetHeight + 'px';
   } else {
+    wrap.style.breakBefore = '';
+    wrap.style.pageBreakBefore = '';
     targetHeight = parseFloat(getComputedStyle(canvas).maxHeight) || canvas.clientHeight || 210;
   }
   chart.resize(targetWidth, targetHeight);
@@ -1763,6 +1774,8 @@ document.getElementById('pdfBtn').addEventListener('click', async ()=>{
       restoreChartResolution();
       const canvasEl2 = document.getElementById('growthChart');
       if(canvasEl2) canvasEl2.style.maxHeight = '';
+      const wrapEl2 = document.querySelector('.chart-wrap');
+      if(wrapEl2){ wrapEl2.style.breakBefore = ''; wrapEl2.style.pageBreakBefore = ''; }
       chart.resize();
     }
     btn.disabled = false;

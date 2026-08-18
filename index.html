@@ -1361,13 +1361,13 @@ function render(){
   } else {
     boxFiscal.style.display = "";
     const totalDeducidoPlan = data.slice(0, state.plazo).reduce((sum,row)=>sum+row.beneficioAno, 0); // suma simple, sin reinversión, solo del plazo comprometido
-    const devolucionAnualPromedio = state.plazo > 0 ? totalDeducidoPlan / state.plazo : 0;
+    const beneficioAnualPromedio = state.plazo > 0 ? totalDeducidoPlan / state.plazo : 0;
     const articulo = state.tipoPlan==="Deducible 151" ? "151" : "185";
     boxFiscal.innerHTML = `
       <div class="box-fiscal-title">Beneficio fiscal por deducción de aportación<br>(Artículo ${articulo})</div>
       <div class="box-fiscal-stats">
-        <div><span class="lbl">Devolución anual promedio</span><span class="val">${fmtMXN(devolucionAnualPromedio)}</span></div>
-        <div><span class="lbl">Total devoluciones plazo comprometido</span><span class="val">${fmtMXN(totalDeducidoPlan)}</span></div>
+        <div><span class="lbl">Beneficio anual promedio</span><span class="val">${fmtMXN(beneficioAnualPromedio)}</span></div>
+        <div><span class="lbl">Total beneficio plazo comprometido</span><span class="val">${fmtMXN(totalDeducidoPlan)}</span></div>
       </div>`;
   }
 

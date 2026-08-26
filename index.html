@@ -1165,8 +1165,11 @@ function simulate(inputs, totalYears){
         SC = F+E+interes+cargoFijoUDI+cargoGestion;
       }
 
-      // Bono de Fidelidad: propia tasa (inflación+5%, tope 9%), mismos cargos que Saldo Inicial
-      const bonoDelMes = E*pctB;
+      // Bono de Fidelidad: propia tasa (inflación+5%, tope 9%), mismos cargos que Saldo Inicial.
+      // El bono se calcula ÚNICAMENTE sobre las aportaciones del primer año (meses 1-12): a
+      // partir del mes 13 ya no entran nuevas aportaciones al bono, aunque su saldo sigue
+      // generando interés y pagando sus propios cargos como cualquier otro año.
+      const bonoDelMes = (numMesGlobal<=12) ? E*pctB : 0;
       const Fb = P;
       const interesBono = (Fb+bonoDelMes)*tasaBonoMensual;
       const cargoAdminBono = (numMesGlobal%3===0) ? -(Fb+bonoDelMes+interesBono)*0.009 : 0;
